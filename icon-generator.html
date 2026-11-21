@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Générateur d'icônes</title>
+<style>
+  body { background:#121212; color:#00ff00; font-family:monospace; text-align:center; padding:20px; }
+  button { background:#333; color:#00ff00; border:1px solid #00ff00; font-size:1rem; padding:12px 20px; margin:10px; }
+</style>
+</head>
+<body>
+<h2>Icônes Daniel</h2>
+<button onclick="download(192)">Télécharger icon-192.png</button><br>
+<button onclick="download(512)">Télécharger icon-512.png</button>
+
+<script>
+function makeIcon(size) {
+  const c = document.createElement('canvas');
+  c.width = c.height = size;
+  const ctx = c.getContext('2d');
+  ctx.fillStyle = '#121212';
+  ctx.fillRect(0, 0, size, size);
+  const m = size / 12;
+  ctx.strokeStyle = '#00ff00';
+  ctx.lineWidth = Math.max(4, size / 40);
+  ctx.beginPath();
+  ctx.roundRect(m, m, size - 2 * m, size - 2 * m, size / 6);
+  ctx.stroke();
+  ctx.fillStyle = '#00ff00';
+  ctx.font = 'bold ' + Math.round(size * 0.6) + 'px "Courier New", monospace';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('D', size / 2, size / 2 + size * 0.03);
+  return c;
+}
+function download(size) {
+  makeIcon(size).toBlob(function (blob) {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'icon-' + size + '.png';
+    a.click();
+  });
+}
+</script>
+</body>
+</html>
