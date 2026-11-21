@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Daniel</title>
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="icon-192.png">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="Daniel">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#121212">
+    <style>
+        :root { --bg-color:#121212; --text-color:#00ff00; --input-bg:#1e1e1e; --btn-bg:#333; --footer-color:#555; }
+        body { background-color:var(--bg-color); color:var(--text-color); font-family:'Courier New',Courier,monospace;
+               display:flex; flex-direction:column; min-height:100vh; min-height:100dvh; margin:0; text-align:center;
+               padding:20px; box-sizing:border-box; }
+        main { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+        h1 { font-size:1.8rem; margin-bottom:5px; }
+        .stats { font-size:0.9rem; margin-bottom:20px; color:#888; }
+        .message { font-size:1.2rem; min-height:30px; margin-bottom:20px; font-weight:bold; }
+        input { background-color:var(--input-bg); border:1px solid var(--text-color); color:var(--text-color);
+                font-family:inherit; font-size:1.2rem; padding:10px; width:140px; text-align:center; margin-bottom:10px; }
+        button { background-color:var(--btn-bg); color:var(--text-color); border:1px solid var(--text-color);
+                 font-family:inherit; font-size:1rem; padding:10px 20px; cursor:pointer; width:150px; margin-top:10px; }
+        button:active { background-color:var(--text-color); color:var(--bg-color); }
+        .hidden { display:none !important; }
+        footer { margin-top:auto; padding-top:20px; font-size:0.8rem; color:var(--footer-color); font-style:italic; }
+    </style>
+</head>
+<body>
+    <main>
+        <h1>🤖 Daniel</h1>
+        <div class="stats" id="stats"></div>
+        <div class="message" id="message">À vos marques...</div>
+
+        <div id="game-area">
+            <input type="number" id="guessInput" placeholder="?" autocomplete="off" inputmode="numeric">
+            <br>
+            <button onclick="checkGuess()">Valider</button>
+        </div>
+
+        <button id="nextLevelBtn" class="hidden" onclick="startNextLevel()">Niveau Suivant</button>
+    </main>
+
+    <footer>Dédicacé à Daniel</footer>
+
+    <script>
+        let currentLevel = 1, maxNumber = 100, targetNumber = 0, attempts = 0, minTheoretical = 0;
+
+        const statsEl = document.getElementById('stats');
+        const msgEl = document.getElementById('message');
+        const inputEl = document.getElementById('guessInput');
+        const gameArea = document.getElementById('game-area');
+        const nextBtn = document.getElementById('nextLevelBtn');
+
+        function initLevel() {
+            maxNumber = Math.min(Math.pow(10, currentLevel + 1), 1000000000);
+            targetNumber = Math.floor(Math.random() * maxNumber) + 1;
+            attempts = 0;
+            minTheoretical = Math.ceil(Math.log2(maxNumber));
+
+            statsEl.textContent = `Niveau ${currentLevel} | Cible : 1 à ${maxNumber} (Optimal : ${minTheoretical} essais)`;
+            msgEl.textContent = "À vous de jouer.";
+            msgEl.style.color = "var(--text-color)";
+
+            inputEl.value = '';
+            gameArea.classList.remove('hidden');
+            nextBtn.classList.add('hidden');
+            inputEl.focus();
+        }
+
+        function checkGuess() {
+            const guess = Number(inputEl.value);
+
+            if (inputEl.value === '' || !Number.isInteger(guess) || guess < 1 || guess > maxNumber) {
+                msgEl.textContent = "Entrée invalide.";
+                msgEl.style.color = "orange";
+                inputEl.focus();
+                return;
+            }
+
+            attempts++;
+
+            if (guess < targetNumber) {
+                msgEl.textContent = "Trop petit !";
+                msgEl.style.color = "#00ffff";
+            } else if (guess > targetNumber) {
+                msgEl.textContent = "Trop grand !";
+                msgEl.style.color = "#ff00ff";
+            } else {
+                let scoreStr;
+                if (attempts < minTheoretical) scoreStr = `${attempts} essais. Chanceux !`;
+                else if (attempts === minTheoretical) scoreStr = "PARFAIT !";
+                else scoreStr = `${attempts} essais.`;
+                msgEl.textContent = `Bravo ! Trouvé en ${scoreStr}`;
+                msgEl.style.color = "#00ff00";
+                gameArea.classList.add('hidden');
+                nextBtn.classList.remove('hidden');
+                return;
+            }
+
+            inputEl.value = '';
+            inputEl.focus();
+        }
+
+        function startNextLevel() {
+            currentLevel++;
+            initLevel();
+        }
+
+        inputEl.addEventListener("keydown", function (event) {
+            if (event.key === "Enter") {
+                event.preventDefault();
+                checkGuess();
+            }
+        });
+
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js').catch((err) => console.log('Erreur Service Worker', err));
+            });
+        }
+
+        initLevel();
+    </script>
+</body>
+</html>
