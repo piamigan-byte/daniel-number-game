@@ -16,62 +16,225 @@
         body { background-color:var(--bg-color); color:var(--text-color); font-family:'Courier New',Courier,monospace;
                display:flex; flex-direction:column; min-height:100vh; min-height:100dvh; margin:0; text-align:center;
                padding:20px; box-sizing:border-box; }
-        main { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+        main { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; width:100%; max-width:420px; margin:0 auto; }
         h1 { font-size:1.8rem; margin-bottom:5px; }
-        .stats { font-size:0.9rem; margin-bottom:20px; color:#888; }
-        .message { font-size:1.2rem; min-height:30px; margin-bottom:20px; font-weight:bold; }
+        h2 { font-size:1.2rem; margin:10px 0; }
+        section { width:100%; display:flex; flex-direction:column; align-items:center; }
+        .stats { font-size:0.9rem; margin-bottom:6px; color:#888; }
+        .interval { font-size:0.9rem; margin-bottom:14px; color:#aaa; }
+        .message { font-size:1.2rem; min-height:30px; margin-bottom:14px; font-weight:bold; }
         input { background-color:var(--input-bg); border:1px solid var(--text-color); color:var(--text-color);
-                font-family:inherit; font-size:1.2rem; padding:10px; width:140px; text-align:center; margin-bottom:10px; }
+                font-family:inherit; font-size:1.2rem; padding:10px; width:160px; text-align:center; margin-bottom:10px; }
         button { background-color:var(--btn-bg); color:var(--text-color); border:1px solid var(--text-color);
-                 font-family:inherit; font-size:1rem; padding:10px 20px; cursor:pointer; width:150px; margin-top:10px; }
+                 font-family:inherit; font-size:1rem; padding:10px 20px; cursor:pointer; width:240px; margin-top:10px; }
         button:active { background-color:var(--text-color); color:var(--bg-color); }
+        button.small { width:150px; font-size:0.9rem; }
         .hidden { display:none !important; }
         footer { margin-top:auto; padding-top:20px; font-size:0.8rem; color:var(--footer-color); font-style:italic; }
+        ul.history { list-style:none; padding:0; margin:12px 0 0; width:100%; max-height:30vh; overflow-y:auto; text-align:left;
+                     border-top:1px solid #333; font-size:0.95rem; }
+        ul.history li { padding:4px 8px; border-bottom:1px solid #222; display:flex; justify-content:space-between; }
+        .lt { color:#00ffff; } .gt { color:#ff00ff; } .win { color:#00ff00; font-weight:bold; }
+        .records-list { width:100%; text-align:left; font-size:0.95rem; }
+        .records-list div { padding:6px 8px; border-bottom:1px solid #222; }
+        .help-text { text-align:left; font-size:0.95rem; line-height:1.45; }
+        .help-text p { margin:8px 0; }
+        .help-text strong { color:#fff; }
     </style>
 </head>
 <body>
     <main>
         <h1>🤖 Daniel</h1>
-        <div class="stats" id="stats"></div>
-        <div class="message" id="message">À vos marques...</div>
 
-        <div id="game-area">
-            <input type="number" id="guessInput" placeholder="?" autocomplete="off" inputmode="numeric">
-            <br>
-            <button onclick="checkGuess()">Valider</button>
-        </div>
+        <!-- MENU -->
+        <section id="screen-menu">
+            <button onclick="startGame()">Jouer</button>
+            <button onclick="showRecords()">Historique des records</button>
+            <button onclick="showLevels()">Changement de niveau</button>
+            <button onclick="showScreen('help')">Aide</button>
+        </section>
 
-        <button id="nextLevelBtn" class="hidden" onclick="startNextLevel()">Niveau Suivant</button>
+        <!-- JEU -->
+        <section id="screen-game" class="hidden">
+            <div class="stats" id="stats"></div>
+            <div class="interval" id="interval"></div>
+            <div class="message" id="message"></div>
+
+            <div id="game-area">
+                <input type="number" id="guessInput" placeholder="?" autocomplete="off" inputmode="numeric">
+                <br>
+                <button onclick="checkGuess()">Valider</button>
+            </div>
+
+            <div id="end-area" class="hidden">
+                <button onclick="startGame()">Rejouer</button>
+                <button id="nextLevelBtn" onclick="nextLevel()">Niveau suivant</button>
+            </div>
+
+            <button class="small" onclick="showScreen('menu')">← Menu</button>
+            <ul class="history" id="history"></ul>
+        </section>
+
+        <!-- NIVEAUX -->
+        <section id="screen-levels" class="hidden">
+            <h2>Choisis un niveau</h2>
+            <div id="levels-list"></div>
+            <button class="small" onclick="showScreen('menu')">← Menu</button>
+        </section>
+
+        <!-- RECORDS -->
+        <section id="screen-records" class="hidden">
+            <h2>Historique des records</h2>
+            <div class="records-list" id="records-list"></div>
+            <button class="small" onclick="showScreen('menu')">← Menu</button>
+        </section>
+
+        <!-- AIDE -->
+        <section id="screen-help" class="hidden">
+            <h2>Aide</h2>
+            <div class="help-text">
+                <p><strong>But :</strong> trouver le nombre mystère en un minimum d'essais. Après chaque essai, Daniel te dit si ton nombre est trop petit ou trop grand.</p>
+                <p><strong>Recherche dichotomique :</strong> c'est une méthode qui consiste à couper l'intervalle des possibilités en deux à chaque essai. On joue toujours le nombre du milieu de l'intervalle encore possible.</p>
+                <p><strong>Exemple (1 à 100) :</strong> tu essaies 50. « Trop petit » ? Le nombre est entre 51 et 100, donc tu essaies 75. « Trop grand » ? Il est entre 51 et 74, et ainsi de suite. À chaque essai, la moitié des nombres restants est éliminée.</p>
+                <p><strong>Pourquoi c'est la stratégie optimale :</strong> aucune autre méthode n'élimine plus de nombres par essai dans le pire des cas. Elle garantit de trouver le nombre en au plus ⌊log₂(N)⌋ + 1 essais, soit 7 essais pour 1 à 100, et 10 pour 1 à 1000.</p>
+                <p><strong>Score :</strong> « PARFAIT » = exactement ce maximum garanti. « Chanceux » = moins d'essais que ce maximum (possible grâce à la chance).</p>
+            </div>
+            <button class="small" onclick="showScreen('menu')">← Menu</button>
+        </section>
     </main>
 
     <footer>Dédicacé à Daniel</footer>
 
     <script>
-        let currentLevel = 1, maxNumber = 100, targetNumber = 0, attempts = 0, minTheoretical = 0;
+        const MAX_LEVEL = 8;
+        const RECORDS_KEY = 'daniel-records';
+        const LEVEL_KEY = 'daniel-level';
 
+        let currentLevel = 1, maxNumber = 100, targetNumber = 0, attempts = 0, minTheoretical = 0;
+        let low = 1, high = 100, guesses = [], gameOver = false;
+
+        const screens = ['menu', 'game', 'levels', 'records', 'help'];
         const statsEl = document.getElementById('stats');
+        const intervalEl = document.getElementById('interval');
         const msgEl = document.getElementById('message');
         const inputEl = document.getElementById('guessInput');
         const gameArea = document.getElementById('game-area');
+        const endArea = document.getElementById('end-area');
         const nextBtn = document.getElementById('nextLevelBtn');
+        const historyEl = document.getElementById('history');
 
-        function initLevel() {
-            maxNumber = Math.min(Math.pow(10, currentLevel + 1), 1000000000);
+        function fmt(n) { return n.toLocaleString('fr-FR'); }
+        function levelMax(level) { return Math.pow(10, level + 1); }
+
+        // Nombre d'essais maximum garanti par la dichotomie : floor(log2(n)) + 1
+        function optimalAttempts(n) {
+            let count = 0;
+            while (n > 0) {
+                n = Math.floor(n / 2);
+                count++;
+            }
+            return count;
+        }
+
+        // ---------- Stockage ----------
+        function loadRecords() {
+            try { return JSON.parse(localStorage.getItem(RECORDS_KEY)) || {}; } catch (e) { return {}; }
+        }
+        function saveRecords(r) {
+            try { localStorage.setItem(RECORDS_KEY, JSON.stringify(r)); } catch (e) {}
+        }
+        function loadLevel() {
+            try {
+                const l = parseInt(localStorage.getItem(LEVEL_KEY));
+                if (l >= 1 && l <= MAX_LEVEL) return l;
+            } catch (e) {}
+            return 1;
+        }
+        function saveLevel(l) {
+            try { localStorage.setItem(LEVEL_KEY, String(l)); } catch (e) {}
+        }
+
+        // ---------- Navigation ----------
+        function showScreen(name) {
+            screens.forEach(s => {
+                document.getElementById('screen-' + s).classList.toggle('hidden', s !== name);
+            });
+        }
+
+        function showLevels() {
+            const list = document.getElementById('levels-list');
+            list.innerHTML = '';
+            for (let l = 1; l <= MAX_LEVEL; l++) {
+                const b = document.createElement('button');
+                b.textContent = `Niveau ${l} : 1 à ${fmt(levelMax(l))}` + (l === currentLevel ? '  ✓' : '');
+                b.onclick = () => { currentLevel = l; saveLevel(l); startGame(); };
+                list.appendChild(b);
+            }
+            showScreen('levels');
+        }
+
+        function showRecords() {
+            const list = document.getElementById('records-list');
+            list.innerHTML = '';
+            const records = loadRecords();
+            for (let l = 1; l <= MAX_LEVEL; l++) {
+                const row = document.createElement('div');
+                const optimal = optimalAttempts(levelMax(l));
+                const r = records[l];
+                row.textContent = r
+                    ? `Niveau ${l} (1 à ${fmt(levelMax(l))}) : record ${r.best} essais · ${r.games} partie(s) · optimal ${optimal}`
+                    : `Niveau ${l} (1 à ${fmt(levelMax(l))}) : pas encore joué · optimal ${optimal}`;
+                list.appendChild(row);
+            }
+            showScreen('records');
+        }
+
+        // ---------- Jeu ----------
+        function startGame() {
+            maxNumber = levelMax(currentLevel);
             targetNumber = Math.floor(Math.random() * maxNumber) + 1;
             attempts = 0;
-            minTheoretical = Math.ceil(Math.log2(maxNumber));
+            guesses = [];
+            gameOver = false;
+            low = 1;
+            high = maxNumber;
+            minTheoretical = optimalAttempts(maxNumber);
 
-            statsEl.textContent = `Niveau ${currentLevel} | Cible : 1 à ${maxNumber} (Optimal : ${minTheoretical} essais)`;
+            statsEl.textContent = `Niveau ${currentLevel} | Cible : 1 à ${fmt(maxNumber)} (Optimal : ${minTheoretical} essais)`;
             msgEl.textContent = "À vous de jouer.";
             msgEl.style.color = "var(--text-color)";
 
             inputEl.value = '';
             gameArea.classList.remove('hidden');
-            nextBtn.classList.add('hidden');
+            endArea.classList.add('hidden');
+            renderHistory();
+            updateInterval();
+            showScreen('game');
             inputEl.focus();
         }
 
+        function updateInterval() {
+            intervalEl.textContent = `Essais : ${attempts} | Encore possible : ${fmt(low)} à ${fmt(high)}`;
+        }
+
+        function renderHistory() {
+            historyEl.innerHTML = '';
+            for (let i = guesses.length - 1; i >= 0; i--) {
+                const g = guesses[i];
+                const li = document.createElement('li');
+                const left = document.createElement('span');
+                left.textContent = `#${i + 1}  ${fmt(g.value)}`;
+                const right = document.createElement('span');
+                right.textContent = g.label;
+                right.className = g.cls;
+                li.appendChild(left);
+                li.appendChild(right);
+                historyEl.appendChild(li);
+            }
+        }
+
         function checkGuess() {
+            if (gameOver) return;
             const guess = Number(inputEl.value);
 
             if (inputEl.value === '' || !Number.isInteger(guess) || guess < 1 || guess > maxNumber) {
@@ -81,33 +244,66 @@
                 return;
             }
 
+            if (guesses.some(g => g.value === guess)) {
+                msgEl.textContent = "Déjà proposé !";
+                msgEl.style.color = "orange";
+                inputEl.value = '';
+                inputEl.focus();
+                return;
+            }
+
             attempts++;
 
             if (guess < targetNumber) {
                 msgEl.textContent = "Trop petit !";
                 msgEl.style.color = "#00ffff";
+                if (guess + 1 > low) low = guess + 1;
+                guesses.push({ value: guess, label: 'Trop petit', cls: 'lt' });
             } else if (guess > targetNumber) {
                 msgEl.textContent = "Trop grand !";
                 msgEl.style.color = "#ff00ff";
+                if (guess - 1 < high) high = guess - 1;
+                guesses.push({ value: guess, label: 'Trop grand', cls: 'gt' });
             } else {
+                guesses.push({ value: guess, label: 'Trouvé !', cls: 'win' });
                 let scoreStr;
                 if (attempts < minTheoretical) scoreStr = `${attempts} essais. Chanceux !`;
                 else if (attempts === minTheoretical) scoreStr = "PARFAIT !";
                 else scoreStr = `${attempts} essais.`;
                 msgEl.textContent = `Bravo ! Trouvé en ${scoreStr}`;
                 msgEl.style.color = "#00ff00";
+                low = high = guess;
+                gameOver = true;
+                updateRecord();
                 gameArea.classList.add('hidden');
-                nextBtn.classList.remove('hidden');
+                endArea.classList.remove('hidden');
+                nextBtn.classList.toggle('hidden', currentLevel >= MAX_LEVEL);
+                renderHistory();
+                updateInterval();
                 return;
             }
 
+            renderHistory();
+            updateInterval();
             inputEl.value = '';
             inputEl.focus();
         }
 
-        function startNextLevel() {
-            currentLevel++;
-            initLevel();
+        function updateRecord() {
+            const records = loadRecords();
+            const r = records[currentLevel] || { best: attempts, games: 0 };
+            r.games++;
+            if (attempts < r.best) r.best = attempts;
+            records[currentLevel] = r;
+            saveRecords(records);
+        }
+
+        function nextLevel() {
+            if (currentLevel < MAX_LEVEL) {
+                currentLevel++;
+                saveLevel(currentLevel);
+                startGame();
+            }
         }
 
         inputEl.addEventListener("keydown", function (event) {
@@ -123,7 +319,8 @@
             });
         }
 
-        initLevel();
+        currentLevel = loadLevel();
+        showScreen('menu');
     </script>
 </body>
-</html>
+            </html>
